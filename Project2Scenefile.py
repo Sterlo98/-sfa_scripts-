@@ -10,11 +10,18 @@ log = logging.getLogger(__name__)
 class SceneFile(object):
     """An Abstract rep of a Scene File"""
 
-    def __init__(self, path):
+    def __init__(self, path=None):
         self.folder_path = Path()
         self.descriptor = 'main'
         self.task = None
         self.ext = '.ma'
+        scene = pmc.system.sceneName()
+        if not path and scene:
+            path = scene
+        if not path and not scene:
+            log.warning("Unable to initialize Scenefile object from a"
+                        "new scene. pls, specify a path. FOOL!")
+            return
         self._init_from_path(path)
 
     @property
@@ -30,6 +37,8 @@ class SceneFile(object):
         return self.folder_path / self.filename
 
     def _init_from_path(self, path):
+        if not path:
+            path = ''
         path = Path(path)
         self.folder_path = path.parent
         self.ext = path.ext
