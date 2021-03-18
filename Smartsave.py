@@ -28,12 +28,18 @@ class SmartSaveUI(QtWidgets.QDialog):
                             QtCore.Qt.WindowContextHelpButtonHint)
         self.create_ui()
 
-    # the CHANGES
     def create_ui(self):
         self.title_lbl = QtWidgets.QLabel("Smart Saver")
         self.title_lbl.setStyleSheet("font: bold 20px")
+        #Changes
+        self.folder_le = QtWidgets.QLineEdit("C:\\")
+        self.folder_browse_btn = QtWidgets.QPushButton("...")
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.folder_le)
+        layout.addWidget(self.folder_browse_btn)
         self.main_lay = QtWidgets.QVBoxLayout()
         self.main_lay.addWidget(self.title_lbl)
+        self.main_lay.addLayout(layout)
         self.setLayout(self.main_lay)
 
 
