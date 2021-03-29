@@ -32,7 +32,7 @@ class SmartSaveUI(QtWidgets.QDialog):
         self.create_connections()
 
     def create_ui(self):
-        self.title_lbl = QtWidgets.QLabel("Smart Saver")
+        self.title_lbl = QtWidgets.QLabel("The Amazing Smart Saver")
         self.title_lbl.setStyleSheet("font: bold 20px")
         self.folder_lay = self._create_folder_ui()
         self.filename_lay = self._create_filename_ui()
@@ -46,7 +46,30 @@ class SmartSaveUI(QtWidgets.QDialog):
         self.setLayout(self.main_lay)
 
     def create_connections(self):
+        """Connects Signals and Slots"""
         self.folder_browse_btn.clicked.connect(self._browse_folder)
+        self.save_btn.clicked.connect(self._save)
+        self.save_increment_btn.clicked.connect(self._save_increment)
+
+    @QtCore.Slot()
+    def _save_increment(self):
+        """Save an Increment of the Scene"""
+        self._set_scenefile_properties_from_ui()
+        self.scenefile.save_increment()
+        self.ver_sbx.setValue(self.scenefile.ver)
+
+    @QtCore.Slot()
+    def _save(self):
+        """save the scene"""
+        self._set_scenefile_properties_from_ui()
+        self.scenefile.save()
+
+    def _set_scenefile_properties_from_ui(self):
+        self.scenefile.folder_path = self.folder_le.text()
+        self.scenefile.descriptor = self.descriptor_le.text()
+        self.scenefile.task = self.task_le.text()
+        self.scenefile.ver = self.ver_sbx.value()
+        self.scenefile.ext = self.ext_lbl.text()
 
     @QtCore.Slot()
     def _browse_folder(self):
@@ -110,9 +133,8 @@ class SmartSaveUI(QtWidgets.QDialog):
 
 class SceneFile(object):
     """An Abstract rep of a Scene File"""
-
     def __init__(self, path=None):
-        self.folder_path = Path(cmds.workspace(query=True,
+        self._folder_path = Path(cmds.workspace(query=True,
                                                rootDirectory=True)) / "scenes"
         self.descriptor = 'main'
         self.task = 'model'
@@ -127,6 +149,14 @@ class SceneFile(object):
         self._init_from_path(path)
 
     @property
+    def folder_path(self):
+        return self._folder_path
+
+    @folder_path.setter
+    def folder_path(self, val):
+        self._folder_path = Path(val)
+
+    @property
     def filename(self):
         pattern = "{descriptor}_{task}_v{ver:03d}{ext}"
         return pattern.format(descriptor=self.descriptor,
@@ -139,12 +169,10 @@ class SceneFile(object):
         return self.folder_path / self.filename
 
     def _init_from_path(self, path):
-        if not path:
-            path = ''
         path = Path(path)
         self.folder_path = path.parent
         self.ext = path.ext
-        self.descriptor, self.task, ver = path.stripext().split("_")
+        self.descriptor, self.task, ver = path.name.stripext().split("_")
         self.ver = int(ver.split("v")[-1])
 
     def save(self):
@@ -153,9 +181,7 @@ class SceneFile(object):
         :Returns:
         Path: the path to the scene file if successful! """
         try:
-
             return pmc.system.saveAs(self.path)
-
         except RuntimeError as err:
             log.warning("Missing the directory in path, fam! Creating the directories...")
             self.folder_path.makedirs_p()
@@ -173,10 +199,10 @@ class SceneFile(object):
             return 1
         matching_scenefiles.sort(reverse=True)
         latest_scenefile = matching_scenefiles[0]
-        latest_scenefile = latest_scenefile.name.striptext()
+        latest_scenefile = latest_scenefile.name.stripext()
         latest_ver_num = int(latest_scenefile.split("_v")[-1])
         return latest_ver_num + 1
 
-    def increment_save(self):
+    def save_increment(self):
         self.ver = self.next_avail_ver()
         self.save()
